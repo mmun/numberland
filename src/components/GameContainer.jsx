@@ -1,24 +1,47 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { playSound } from '../utils/sounds';
-import ProgressBar from './ProgressBar';
+import { FEEDBACK_MESSAGES } from '../constants';
 import confetti from 'canvas-confetti';
 
-function GameContainer({ currentMax, currentRound, totalRounds, onCorrectAnswer, onNextRound }) {
+function GameContainer({ 
+  difficultyRange, 
+  difficultyName,
+  difficultyDescription,
+  onAnswerSubmit, 
+  onNextRound 
+}) {
   const [number1, setNumber1] = useState(1);
   const [number2, setNumber2] = useState(1);
   const [userAnswer, setUserAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
   const [isAnswerCorrect, setIsAnswerCorrect] = useState(null);
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
+  const [difficultyChanged, setDifficultyChanged] = useState(false);
+  const [prevDifficultyName, setPrevDifficultyName] = useState(difficultyName);
   
   const inputRef = useRef(null);
   
-  // Generate a new problem whenever the round changes
+  // Generate a new problem whenever the round changes or difficulty changes
   useEffect(() => {
     generateProblem();
     setIsAnswerChecked(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentRound, currentMax]);
+  }, [difficultyRange]);
+  
+  // Detect difficulty changes to trigger animations
+  useEffect(() => {
+    if (prevDifficultyName !== difficultyName) {
+      setDifficultyChanged(true);
+      setPrevDifficultyName(difficultyName);
+      
+      // Reset animation flag after animation completes
+      const timer = setTimeout(() => {
+        setDifficultyChanged(false);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [difficultyName, prevDifficultyName]);
   
   // Focus on input when a new problem is generated
   useEffect(() => {
@@ -28,8 +51,9 @@ function GameContainer({ currentMax, currentRound, totalRounds, onCorrectAnswer,
   }, [number1, number2]);
   
   const generateProblem = () => {
-    const num1 = Math.floor(Math.random() * currentMax) + 1;
-    const num2 = Math.floor(Math.random() * currentMax) + 1;
+    const [min, max] = difficultyRange;
+    const num1 = Math.floor(Math.random() * (max - min + 1)) + min;
+    const num2 = Math.floor(Math.random() * (max - min + 1)) + min;
     
     setNumber1(num1);
     setNumber2(num2);
@@ -51,13 +75,19 @@ function GameContainer({ currentMax, currentRound, totalRounds, onCorrectAnswer,
     setIsAnswerCorrect(correct);
     setIsAnswerChecked(true);
     
+    // Notify parent component of result
+    onAnswerSubmit(correct);
+    
     if (correct) {
-      setFeedback('✅ Correct!');
-      onCorrectAnswer();
+      // Get a random positive feedback message
+      const randomIndex = Math.floor(Math.random() * FEEDBACK_MESSAGES.correct.length);
+      setFeedback(FEEDBACK_MESSAGES.correct[randomIndex]);
       playSound('correct');
       showConfetti();
     } else {
-      setFeedback(`❌ Oops! The answer is ${correctAnswer}`);
+      // Get a random encouraging feedback message
+      const randomIndex = Math.floor(Math.random() * FEEDBACK_MESSAGES.incorrect.length);
+      setFeedback(`${FEEDBACK_MESSAGES.incorrect[randomIndex]} The answer is ${correctAnswer}`);
       playSound('incorrect');
       showPoopEmoji();
     }
@@ -75,21 +105,19 @@ function GameContainer({ currentMax, currentRound, totalRounds, onCorrectAnswer,
   
   const showConfetti = () => {
     confetti({
-      particleCount: 150, // More particles for bigger effect
-      spread: 90, // Wider spread
+      particleCount: 100,
+      spread: 70,
       origin: { y: 0.6 }
     });
   };
   
   const showPoopEmoji = () => {
-    // Create more emojis for a bigger effect
-    for (let i = 0; i < 8; i++) {
+    // Fewer emojis for younger children - less overwhelming
+    for (let i = 0; i < 3; i++) {
       const poop = document.createElement('div');
       poop.className = 'emoji poop-emoji';
       poop.textContent = '💩';
       poop.style.left = `${Math.random() * 100}vw`;
-      // Add size variation for more playful effect
-      poop.style.fontSize = `${60 + Math.random() * 40}px`;
       document.body.appendChild(poop);
 
       // Remove after animation completes
@@ -99,12 +127,19 @@ function GameContainer({ currentMax, currentRound, totalRounds, onCorrectAnswer,
     }
   };
   
-  // Detect if we're on a mobile device for responsive adjustments
-  const isMobile = window.innerWidth <= 600;
-  
   return (
     <div className="game-container">
-      <ProgressBar current={currentRound} total={totalRounds} />
+      <div className="difficulty-indicator">
+        <div className="difficulty-level-container">
+          <span>Level: </span>
+          <span className={`difficulty-level ${difficultyChanged ? 
+            (prevDifficultyName < difficultyName ? 'difficulty-up' : 'difficulty-down') 
+            : ''}`}>
+            {difficultyName}
+          </span>
+        </div>
+        <p className="difficulty-description">{difficultyDescription}</p>
+      </div>
       
       <div className="equation">
         <span className="equation-number">{number1}</span>
@@ -115,7 +150,7 @@ function GameContainer({ currentMax, currentRound, totalRounds, onCorrectAnswer,
           ref={inputRef}
           className="answer-input"
           type="number"
-          inputMode="numeric" // Better for mobile numeric keyboard
+          inputMode="numeric"
           min="0"
           max="99"
           value={userAnswer}

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { playSound } from '../utils/sounds';
 import confetti from 'canvas-confetti';
 
-function ResultScreen({ score, totalRounds, onPlayAgain }) {
+function ResultScreen({ score, totalRounds, maxDifficultyReached, difficultyName, onPlayAgain }) {
   const successThreshold = Math.floor(totalRounds * 0.7);
   
   useEffect(() => {
@@ -30,6 +30,19 @@ function ResultScreen({ score, totalRounds, onPlayAgain }) {
     <div className="result-screen">
       <h2 className="result-title">Great Job!</h2>
       <p>You got <span className="score">{score}</span> out of {totalRounds} correct!</p>
+      
+      {maxDifficultyReached && (
+        <p className="max-difficulty-message">
+          Amazing! You reached the highest level: {difficultyName}!
+        </p>
+      )}
+      
+      {!maxDifficultyReached && (
+        <p className="difficulty-message">
+          You reached the {difficultyName} level. Keep practicing to reach higher levels!
+        </p>
+      )}
+      
       <button className="play-again-button" onClick={onPlayAgain}>
         Play Again
       </button>

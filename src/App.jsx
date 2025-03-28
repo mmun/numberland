@@ -1,87 +1,75 @@
-import React, { useState } from 'react';
-import LevelSelect from './components/LevelSelect';
+import React, { useState, useEffect } from 'react';
 import GameContainer from './components/GameContainer';
-import ResultScreen from './components/ResultScreen';
-import { TOTAL_ROUNDS } from './constants';
+import { DIFFICULTY_LEVELS } from './constants';
 
 function App() {
   const [gameState, setGameState] = useState({
-    currentMax: 0,
-    currentRound: 0,
     score: 0,
-    gameStarted: false,
-    gameEnded: false
+    currentDifficultyIndex: 0,
+    consecutiveCorrect: 0,
+    consecutiveIncorrect: 0,
+    gameStarted: true
   });
 
-  const startGame = (maxNumber) => {
-    setGameState({
-      currentMax: maxNumber,
-      currentRound: 0,
-      score: 0,
-      gameStarted: true,
-      gameEnded: false
-    });
-  };
+  // Start the game immediately when component mounts
+  useEffect(() => {
+    // No need to wait for level selection
+  }, []);
 
-  const incrementScore = () => {
-    setGameState(prevState => ({
-      ...prevState,
-      score: prevState.score + 1
-    }));
-  };
-
-  const nextRound = () => {
-    const nextRoundNumber = gameState.currentRound + 1;
-    
-    if (nextRoundNumber >= TOTAL_ROUNDS) {
-      setGameState(prevState => ({
-        ...prevState,
-        gameEnded: true,
-        gameStarted: false
+  const handleAnswerSubmit = (isCorrect) => {
+    // Update score if correct
+    if (isCorrect) {
+      setGameState(prev => ({
+        ...prev,
+        score: prev.score + 1,
+        consecutiveCorrect: prev.consecutiveCorrect + 1,
+        consecutiveIncorrect: 0
       }));
+
+      // Increase difficulty after 2 consecutive correct answers
+      if (gameState.consecutiveCorrect + 1 >= 2 && 
+          gameState.currentDifficultyIndex < DIFFICULTY_LEVELS.length - 1) {
+        setGameState(prev => ({
+          ...prev,
+          currentDifficultyIndex: prev.currentDifficultyIndex + 1,
+          consecutiveCorrect: 0 // Reset counter after difficulty change
+        }));
+      }
     } else {
-      setGameState(prevState => ({
-        ...prevState,
-        currentRound: nextRoundNumber
+      setGameState(prev => ({
+        ...prev,
+        consecutiveIncorrect: prev.consecutiveIncorrect + 1,
+        consecutiveCorrect: 0
       }));
+
+      // Decrease difficulty after 2 consecutive incorrect answers
+      if (gameState.consecutiveIncorrect + 1 >= 2 && gameState.currentDifficultyIndex > 0) {
+        setGameState(prev => ({
+          ...prev,
+          currentDifficultyIndex: prev.currentDifficultyIndex - 1,
+          consecutiveIncorrect: 0 // Reset counter after difficulty change
+        }));
+      }
     }
   };
 
-  const resetGame = () => {
-    setGameState({
-      currentMax: 0,
-      currentRound: 0,
-      score: 0,
-      gameStarted: false,
-      gameEnded: false
-    });
+  const nextRound = () => {
+    // Simply trigger a new round without tracking the count
   };
+
+  const currentDifficulty = DIFFICULTY_LEVELS[gameState.currentDifficultyIndex];
 
   return (
     <div className="container">
       <h1>Numberland</h1>
       
-      {!gameState.gameStarted && !gameState.gameEnded && (
-        <LevelSelect onLevelSelect={startGame} />
-      )}
-      
-      {gameState.gameStarted && (
-        <GameContainer 
-          currentMax={gameState.currentMax}
-          currentRound={gameState.currentRound}
-          totalRounds={TOTAL_ROUNDS}
-          onCorrectAnswer={incrementScore}
-          onNextRound={nextRound}
-        />
-      )}
-      
-      {gameState.gameEnded && (
-        <ResultScreen 
-          score={gameState.score} 
-          totalRounds={TOTAL_ROUNDS} 
-          onPlayAgain={resetGame} 
-        />
-      )}
+      <GameContainer 
+        difficultyRange={currentDifficulty.range}
+        difficultyName={currentDifficulty.name}
+        difficultyDescription={currentDifficulty.description}
+        onAnswerSubmit={handleAnswerSubmit}
+        onNextRound={nextRound}
+      />
     </div>
   );
 }

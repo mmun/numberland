@@ -1,25 +1,22 @@
 import { playSound } from "./sounds.js";
+import {
+  DIFFICULTY_LEVELS,
+  FEEDBACK_MESSAGES,
+  REQUIRED_CORRECT_TO_ADVANCE,
+} from "./constants.js";
 
-const TOTAL_ROUNDS = 10;
-
-// Create a game state object instead of separate variables
+// Create a game state object
 const gameState = {
-  currentMax: 0,
   currentRound: 0,
   score: 0,
   currentAnswer: 0,
+  currentDifficultyIndex: 0,
+  consecutiveCorrect: 0,
+  consecutiveIncorrect: 0,
   gameStarted: false,
 };
 
 export function initGame() {
-  // Add event listeners for level selection
-  document.querySelectorAll(".level-button").forEach((button) => {
-    button.addEventListener("click", () => {
-      gameState.currentMax = parseInt(button.dataset.max);
-      startGame();
-    });
-  });
-
   // Add event listener for check button
   document
     .getElementById("check-button")
@@ -43,27 +40,36 @@ export function initGame() {
       }
     }
   });
+
+  // Start game immediately instead of showing level selection
+  startGame();
 }
 
 function startGame() {
-  // Hide level selection and show game
-  document.getElementById("level-select").classList.add("hidden");
+  // Show game container
   document.getElementById("game-container").classList.remove("hidden");
 
   // Reset game state
   gameState.currentRound = 0;
   gameState.score = 0;
+  gameState.currentDifficultyIndex = 0; // Start with easiest difficulty
+  gameState.consecutiveCorrect = 0;
+  gameState.consecutiveIncorrect = 0;
   gameState.gameStarted = true;
 
   // Start first round
   generateProblem();
-  updateProgressBar();
+  updateDifficultyIndicator();
 }
 
 function generateProblem() {
-  // Generate two random numbers based on the level
-  const number1 = Math.floor(Math.random() * gameState.currentMax) + 1;
-  const number2 = Math.floor(Math.random() * gameState.currentMax) + 1;
+  // Get current difficulty settings
+  const currentDifficulty = DIFFICULTY_LEVELS[gameState.currentDifficultyIndex];
+  const [min, max] = currentDifficulty.range;
+
+  // Generate two random numbers based on the current difficulty
+  const number1 = Math.floor(Math.random() * (max - min + 1)) + min;
+  const number2 = Math.floor(Math.random() * (max - min + 1)) + min;
 
   // Display the numbers
   document.getElementById("number1").textContent = number1;
@@ -99,13 +105,49 @@ function checkAnswer() {
 
   if (isCorrect) {
     gameState.score++;
-    feedback.textContent = "✅ Correct!";
+    gameState.consecutiveCorrect++;
+    gameState.consecutiveIncorrect = 0;
+
+    // Get a random positive feedback message
+    const randomIndex = Math.floor(
+      Math.random() * FEEDBACK_MESSAGES.correct.length
+    );
+    feedback.textContent = FEEDBACK_MESSAGES.correct[randomIndex];
+
     playSound("correct");
     showConfetti();
+
+    // Increase difficulty after required number of consecutive correct answers
+    if (
+      gameState.consecutiveCorrect >= REQUIRED_CORRECT_TO_ADVANCE &&
+      gameState.currentDifficultyIndex < DIFFICULTY_LEVELS.length - 1
+    ) {
+      gameState.currentDifficultyIndex++;
+      gameState.consecutiveCorrect = 0; // Reset counter
+      updateDifficultyIndicator(true); // Show upgrade animation
+    }
   } else {
-    feedback.textContent = `❌ Oops! The answer is ${gameState.currentAnswer}`;
+    gameState.consecutiveIncorrect++;
+    gameState.consecutiveCorrect = 0;
+
+    // Get a random encouraging feedback message
+    const randomIndex = Math.floor(
+      Math.random() * FEEDBACK_MESSAGES.incorrect.length
+    );
+    feedback.textContent = `${FEEDBACK_MESSAGES.incorrect[randomIndex]} The answer is ${gameState.currentAnswer}`;
+
     playSound("incorrect");
     showPoopEmoji();
+
+    // Decrease difficulty after 2 consecutive incorrect answers
+    if (
+      gameState.consecutiveIncorrect >= 2 &&
+      gameState.currentDifficultyIndex > 0
+    ) {
+      gameState.currentDifficultyIndex--;
+      gameState.consecutiveIncorrect = 0; // Reset counter
+      updateDifficultyIndicator(false); // Show downgrade animation
+    }
   }
 
   // Hide check button and show next button
@@ -116,12 +158,8 @@ function checkAnswer() {
 function nextRound() {
   gameState.currentRound++;
 
-  if (gameState.currentRound >= TOTAL_ROUNDS) {
-    endGame();
-  } else {
-    generateProblem();
-    updateProgressBar();
-  }
+  generateProblem();
+  updateDifficultyIndicator();
 }
 
 function endGame() {
@@ -131,6 +169,17 @@ function endGame() {
 
   // Update final score
   document.getElementById("final-score").textContent = gameState.score;
+
+  // Add message about reaching highest difficulty
+  const maxDifficultyText = document.getElementById("max-difficulty-reached");
+  if (gameState.currentDifficultyIndex === DIFFICULTY_LEVELS.length - 1) {
+    maxDifficultyText.textContent = `Amazing! You reached the ${
+      DIFFICULTY_LEVELS[gameState.currentDifficultyIndex].name
+    } level!`;
+    maxDifficultyText.classList.remove("hidden");
+  } else {
+    maxDifficultyText.classList.add("hidden");
+  }
 
   // Celebrate if they did well
   if (gameState.score >= 7) {
@@ -151,17 +200,34 @@ function endGame() {
 }
 
 function resetGame() {
-  // Hide result screen and show level selection
+  // Hide result screen and show game container
   document.getElementById("result-screen").classList.add("hidden");
-  document.getElementById("level-select").classList.remove("hidden");
-  gameState.gameStarted = false;
+  document.getElementById("game-container").classList.remove("hidden");
+
+  // Reset the game
+  startGame();
 }
 
-function updateProgressBar() {
-  const progressPercentage = (gameState.currentRound / TOTAL_ROUNDS) * 100;
-  document.getElementById(
-    "progress-fill"
-  ).style.width = `${progressPercentage}%`;
+function updateDifficultyIndicator(showAnimation = false) {
+  const currentDifficulty = DIFFICULTY_LEVELS[gameState.currentDifficultyIndex];
+  const difficultyText = document.getElementById("difficulty-level");
+  const difficultyDesc = document.getElementById("difficulty-description");
+
+  // Update the text content
+  difficultyText.textContent = currentDifficulty.name;
+  difficultyDesc.textContent = currentDifficulty.description;
+
+  // Apply animation classes if requested
+  if (showAnimation) {
+    const isUpgrade = gameState.consecutiveCorrect === 0;
+
+    difficultyText.classList.remove("difficulty-up", "difficulty-down");
+    setTimeout(() => {
+      difficultyText.classList.add(
+        isUpgrade ? "difficulty-up" : "difficulty-down"
+      );
+    }, 10);
+  }
 }
 
 function showConfetti() {
@@ -173,7 +239,8 @@ function showConfetti() {
 }
 
 function showPoopEmoji() {
-  for (let i = 0; i < 5; i++) {
+  // Fewer emojis for younger children - less overwhelming
+  for (let i = 0; i < 3; i++) {
     const poop = document.createElement("div");
     poop.className = "emoji";
     poop.textContent = "💩";
