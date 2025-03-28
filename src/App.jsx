@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import GameContainer from './components/GameContainer';
+import ResultScreen from './components/ResultScreen';
 import { DIFFICULTY_LEVELS } from './constants';
+import { initSpeech } from './utils/speech';
 
 function App() {
   const [gameState, setGameState] = useState({
     score: 0,
+    rounds: 0,
     currentDifficultyIndex: 0,
-    consecutiveCorrect: 0,
-    consecutiveIncorrect: 0,
-    gameStarted: true
+    gameStarted: true,
+    gameOver: false
   });
 
-  // Start the game immediately when component mounts
+  // Initialize speech synthesis when component mounts
   useEffect(() => {
-    // No need to wait for level selection
+    initSpeech();
   }, []);
 
   const handleAnswerSubmit = (isCorrect) => {
@@ -22,54 +24,81 @@ function App() {
       setGameState(prev => ({
         ...prev,
         score: prev.score + 1,
-        consecutiveCorrect: prev.consecutiveCorrect + 1,
-        consecutiveIncorrect: 0
       }));
-
-      // Increase difficulty after 2 consecutive correct answers
-      if (gameState.consecutiveCorrect + 1 >= 2 && 
-          gameState.currentDifficultyIndex < DIFFICULTY_LEVELS.length - 1) {
-        setGameState(prev => ({
-          ...prev,
-          currentDifficultyIndex: prev.currentDifficultyIndex + 1,
-          consecutiveCorrect: 0 // Reset counter after difficulty change
-        }));
-      }
-    } else {
-      setGameState(prev => ({
-        ...prev,
-        consecutiveIncorrect: prev.consecutiveIncorrect + 1,
-        consecutiveCorrect: 0
-      }));
-
-      // Decrease difficulty after 2 consecutive incorrect answers
-      if (gameState.consecutiveIncorrect + 1 >= 2 && gameState.currentDifficultyIndex > 0) {
-        setGameState(prev => ({
-          ...prev,
-          currentDifficultyIndex: prev.currentDifficultyIndex - 1,
-          consecutiveIncorrect: 0 // Reset counter after difficulty change
-        }));
-      }
     }
   };
 
-  const nextRound = () => {
-    // Simply trigger a new round without tracking the count
+  const handleNextRound = () => {
+    // Increment the round counter
+    setGameState(prev => ({
+      ...prev,
+      rounds: prev.rounds + 1
+    }));
+  };
+
+  const handleDifficultyChange = (change) => {
+    setGameState(prev => {
+      const newIndex = Math.max(0, Math.min(DIFFICULTY_LEVELS.length - 1, prev.currentDifficultyIndex + change));
+      return {
+        ...prev,
+        currentDifficultyIndex: newIndex
+      };
+    });
+  };
+
+  const handleEndGame = () => {
+    setGameState(prev => ({
+      ...prev,
+      gameOver: true
+    }));
+  };
+
+  const handlePlayAgain = () => {
+    setGameState({
+      score: 0,
+      rounds: 0,
+      currentDifficultyIndex: 0,
+      gameStarted: true,
+      gameOver: false
+    });
   };
 
   const currentDifficulty = DIFFICULTY_LEVELS[gameState.currentDifficultyIndex];
+  const maxDifficultyReached = gameState.currentDifficultyIndex === DIFFICULTY_LEVELS.length - 1;
 
   return (
     <div className="container">
-      <h1>Numberland</h1>
+      <header>
+        <h1>Numberland</h1>
+      </header>
       
-      <GameContainer 
-        difficultyRange={currentDifficulty.range}
-        difficultyName={currentDifficulty.name}
-        difficultyDescription={currentDifficulty.description}
-        onAnswerSubmit={handleAnswerSubmit}
-        onNextRound={nextRound}
-      />
+      {gameState.gameOver ? (
+        <ResultScreen 
+          score={gameState.score}
+          rounds={gameState.rounds}
+          maxDifficultyReached={maxDifficultyReached}
+          difficultyName={currentDifficulty.name}
+          onPlayAgain={handlePlayAgain}
+        />
+      ) : (
+        <>
+          <div className="game-info">
+            <div className="score-display">Score: {gameState.score}</div>
+            <div className="round-display">Round: {gameState.rounds + 1}</div>
+            <button className="end-game-button" onClick={handleEndGame}>End Game</button>
+          </div>
+          
+          <GameContainer 
+            difficultyRange={currentDifficulty.range}
+            difficultyName={currentDifficulty.name}
+            difficultyDescription={currentDifficulty.description}
+            currentDifficultyIndex={gameState.currentDifficultyIndex}
+            onAnswerSubmit={handleAnswerSubmit}
+            onNextRound={handleNextRound}
+            onDifficultyChange={handleDifficultyChange}
+          />
+        </>
+      )}
     </div>
   );
 }

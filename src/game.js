@@ -14,7 +14,92 @@ const gameState = {
   consecutiveCorrect: 0,
   consecutiveIncorrect: 0,
   gameStarted: false,
+  speechEnabled: false, // Track if text-to-speech is enabled
 };
+
+// Initialize speech synthesis
+let speechSynth = window.speechSynthesis;
+let voiceCache = null;
+
+// Function to get the best American English female voice
+function getBestVoice() {
+  if (voiceCache) return voiceCache;
+
+  const voices = speechSynth.getVoices();
+
+  // First try to find a US English female voice
+  let voice = voices.find(
+    (voice) => voice.lang.includes("en-US") && voice.name.includes("Female")
+  );
+
+  // If not found, try to find any US English voice
+  if (!voice) {
+    voice = voices.find((voice) => voice.lang.includes("en-US"));
+  }
+
+  // If still not found, use the first English voice
+  if (!voice) {
+    voice = voices.find((voice) => voice.lang.includes("en"));
+  }
+
+  // Default to the first available voice if nothing else works
+  if (!voice && voices.length > 0) {
+    voice = voices[0];
+  }
+
+  voiceCache = voice;
+  return voice;
+}
+
+// Function to speak text
+function speakText(text) {
+  if (!gameState.speechEnabled) return;
+
+  // Cancel any ongoing speech
+  speechSynth.cancel();
+
+  // Create new utterance
+  const utterance = new SpeechSynthesisUtterance(text);
+
+  // Set voice (may be null if voices aren't loaded yet)
+  utterance.voice = getBestVoice();
+
+  // Set other properties
+  utterance.pitch = 1;
+  utterance.rate = 0.9; // Slightly slower for clarity
+  utterance.volume = 1;
+
+  // Speak the text
+  speechSynth.speak(utterance);
+}
+
+// Function to speak the current equation
+function speakEquation() {
+  const number1 = document.getElementById("number1").textContent;
+  const number2 = document.getElementById("number2").textContent;
+  const text = `${number1} plus ${number2} equals what?`;
+  speakText(text);
+}
+
+// Toggle speech functionality
+function toggleSpeech() {
+  gameState.speechEnabled = !gameState.speechEnabled;
+
+  // Update button appearance
+  const speechButton = document.getElementById("speech-toggle");
+  if (speechButton) {
+    speechButton.classList.toggle("active", gameState.speechEnabled);
+    speechButton.setAttribute("aria-pressed", gameState.speechEnabled);
+  }
+
+  // If turning on, read current equation
+  if (gameState.speechEnabled) {
+    speakEquation();
+  } else {
+    // If turning off, stop any ongoing speech
+    speechSynth.cancel();
+  }
+}
 
 export function initGame() {
   // Add event listener for check button
@@ -40,6 +125,17 @@ export function initGame() {
       }
     }
   });
+
+  // Initialize speech toggle button
+  const speechButton = document.getElementById("speech-toggle");
+  if (speechButton) {
+    speechButton.addEventListener("click", toggleSpeech);
+  }
+
+  // Load voices if not already loaded
+  if (speechSynth.onvoiceschanged !== undefined) {
+    speechSynth.onvoiceschanged = getBestVoice;
+  }
 
   // Start game immediately instead of showing level selection
   startGame();
@@ -89,6 +185,11 @@ function generateProblem() {
   // Hide next button and show check button
   document.getElementById("check-button").classList.remove("hidden");
   document.getElementById("next-button").classList.add("hidden");
+
+  // Speak the equation if speech is enabled
+  if (gameState.speechEnabled) {
+    speakEquation();
+  }
 }
 
 function checkAnswer() {

@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { playSound } from '../utils/sounds';
-import { FEEDBACK_MESSAGES } from '../constants';
+import { speakText, initSpeech } from '../utils/speech';
+import { FEEDBACK_MESSAGES, REQUIRED_CORRECT_TO_ADVANCE } from '../constants';
 import confetti from 'canvas-confetti';
 
 function GameContainer({ 
   difficultyRange, 
   difficultyName,
   difficultyDescription,
+  currentDifficultyIndex,
   onAnswerSubmit, 
-  onNextRound 
+  onNextRound,
+  onDifficultyChange
 }) {
   const [number1, setNumber1] = useState(1);
   const [number2, setNumber2] = useState(1);
@@ -18,10 +21,21 @@ function GameContainer({
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
   const [difficultyChanged, setDifficultyChanged] = useState(false);
   const [prevDifficultyName, setPrevDifficultyName] = useState(difficultyName);
+  const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
+  const [consecutiveIncorrect, setConsecutiveIncorrect] = useState(0);
+  
+  // Add speech state
+  const [speechEnabled, setSpeechEnabled] = useState(false);
   
   const inputRef = useRef(null);
+  const equationRef = useRef(null);
+
+  // Initialize speech synthesis
+  useEffect(() => {
+    initSpeech();
+  }, []);
   
-  // Generate a new problem whenever the round changes or difficulty changes
+  // Generate a new problem whenever the component mounts or difficulty changes
   useEffect(() => {
     generateProblem();
     setIsAnswerChecked(false);
@@ -49,6 +63,27 @@ function GameContainer({
       inputRef.current.focus();
     }
   }, [number1, number2]);
+
+  // Function to speak the current equation
+  const speakEquation = () => {
+    if (!speechEnabled) return;
+    const text = `${number1} plus ${number2} equals what?`;
+    speakText(text);
+  };
+
+  // Add useEffect to speak equations when they change
+  useEffect(() => {
+    if (speechEnabled) {
+      speakEquation();
+    }
+  }, [number1, number2, speechEnabled]);
+
+  // Add effect to speak feedback messages
+  useEffect(() => {
+    if (speechEnabled && feedback) {
+      speakText(feedback);
+    }
+  }, [feedback, speechEnabled]);
   
   const generateProblem = () => {
     const [min, max] = difficultyRange;
@@ -75,22 +110,62 @@ function GameContainer({
     setIsAnswerCorrect(correct);
     setIsAnswerChecked(true);
     
-    // Notify parent component of result
-    onAnswerSubmit(correct);
-    
     if (correct) {
+      // Update consecutive counts
+      const newConsecutiveCorrect = consecutiveCorrect + 1;
+      setConsecutiveCorrect(newConsecutiveCorrect);
+      setConsecutiveIncorrect(0);
+      
       // Get a random positive feedback message
       const randomIndex = Math.floor(Math.random() * FEEDBACK_MESSAGES.correct.length);
       setFeedback(FEEDBACK_MESSAGES.correct[randomIndex]);
+      
       playSound('correct');
       showConfetti();
+      
+      // Check if we should increase difficulty
+      if (newConsecutiveCorrect >= REQUIRED_CORRECT_TO_ADVANCE) {
+        onDifficultyChange(1); // Increase difficulty
+        setConsecutiveCorrect(0); // Reset counter
+      }
     } else {
+      // Update consecutive counts
+      const newConsecutiveIncorrect = consecutiveIncorrect + 1;
+      setConsecutiveIncorrect(newConsecutiveIncorrect);
+      setConsecutiveCorrect(0);
+      
       // Get a random encouraging feedback message
       const randomIndex = Math.floor(Math.random() * FEEDBACK_MESSAGES.incorrect.length);
       setFeedback(`${FEEDBACK_MESSAGES.incorrect[randomIndex]} The answer is ${correctAnswer}`);
+      
+      // Add shake animation
+      if (equationRef.current) {
+        equationRef.current.classList.add("shake");
+        setTimeout(() => {
+          if (equationRef.current) {
+            equationRef.current.classList.remove("shake");
+          }
+        }, 500);
+      }
+      
       playSound('incorrect');
       showPoopEmoji();
+      
+      // Check if we should decrease difficulty
+      if (newConsecutiveIncorrect >= 2) {
+        onDifficultyChange(-1); // Decrease difficulty
+        setConsecutiveIncorrect(0); // Reset counter
+      }
     }
+    
+    // Notify parent component of result
+    onAnswerSubmit(correct);
+  };
+  
+  const handleNextRound = () => {
+    onNextRound();
+    generateProblem();
+    setIsAnswerChecked(false);
   };
   
   const handleKeyDown = (e) => {
@@ -98,8 +173,22 @@ function GameContainer({
       if (!isAnswerChecked) {
         checkAnswer();
       } else {
-        onNextRound();
+        handleNextRound();
       }
+    }
+  };
+  
+  // Toggle speech functionality
+  const toggleSpeech = () => {
+    const newSpeechEnabled = !speechEnabled;
+    setSpeechEnabled(newSpeechEnabled);
+
+    // If turning on, read current equation
+    if (newSpeechEnabled) {
+      speakEquation();
+    } else if (window.speechSynthesis) {
+      // If turning off, stop any ongoing speech
+      window.speechSynthesis.cancel();
     }
   };
   
@@ -129,6 +218,17 @@ function GameContainer({
   
   return (
     <div className="game-container">
+      {/* Speech toggle button */}
+      <button 
+        id="speech-toggle" 
+        className={speechEnabled ? "active" : ""}
+        aria-label="Toggle speech" 
+        aria-pressed={speechEnabled}
+        onClick={toggleSpeech}
+      >
+        🔊
+      </button>
+
       <div className="difficulty-indicator">
         <div className="difficulty-level-container">
           <span>Level: </span>
@@ -141,7 +241,7 @@ function GameContainer({
         <p className="difficulty-description">{difficultyDescription}</p>
       </div>
       
-      <div className="equation">
+      <div ref={equationRef} className="equation">
         <span className="equation-number">{number1}</span>
         <span>+</span>
         <span className="equation-number">{number2}</span>
@@ -165,7 +265,7 @@ function GameContainer({
           Check Answer
         </button>
       ) : (
-        <button className="next-button" onClick={onNextRound}>
+        <button className="next-button" onClick={handleNextRound}>
           Next Problem
         </button>
       )}
