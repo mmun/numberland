@@ -114,6 +114,9 @@ function checkAnswer() {
     );
     feedback.textContent = FEEDBACK_MESSAGES.correct[randomIndex];
 
+    // Disable the input field after a correct answer
+    answerInput.disabled = true;
+
     playSound("correct");
     showConfetti();
 
@@ -136,6 +139,27 @@ function checkAnswer() {
     );
     feedback.textContent = `${FEEDBACK_MESSAGES.incorrect[randomIndex]} The answer is ${gameState.currentAnswer}`;
 
+    // Add shake animation to the equation container - with null check
+    const equationContainer = document.querySelector(".equation-container");
+    if (equationContainer) {
+      equationContainer.classList.add("shake");
+
+      // Remove the shake class after animation completes
+      setTimeout(() => {
+        equationContainer.classList.remove("shake");
+      }, 500);
+    } else {
+      // Fallback - apply shake to a parent element that we know exists
+      const gameContainer = document.getElementById("game-container");
+      if (gameContainer) {
+        gameContainer.classList.add("shake");
+
+        setTimeout(() => {
+          gameContainer.classList.remove("shake");
+        }, 500);
+      }
+    }
+
     playSound("incorrect");
     showPoopEmoji();
 
@@ -157,6 +181,10 @@ function checkAnswer() {
 
 function nextRound() {
   gameState.currentRound++;
+
+  // Reset input field state
+  const answerInput = document.getElementById("answer-input");
+  answerInput.disabled = false;
 
   generateProblem();
   updateDifficultyIndicator();
