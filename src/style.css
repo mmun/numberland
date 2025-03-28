@@ -1,11 +1,11 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Comic Neue', cursive;
   line-height: 1.5;
-  font-weight: 400;
+  font-weight: 700;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color-scheme: light;
+  color: #213547;
+  background-color: #f9f4ff;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -13,13 +13,8 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+* {
+  box-sizing: border-box;
 }
 
 body {
@@ -30,67 +25,243 @@ body {
   min-height: 100vh;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
 #app {
-  max-width: 1280px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vanilla:hover {
-  filter: drop-shadow(0 0 2em #f7df1eaa);
+h1 {
+  font-size: 3.2em;
+  color: #7b68ee;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  margin-bottom: 1rem;
 }
 
-.card {
-  padding: 2em;
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
 }
 
-.read-the-docs {
-  color: #888;
+.level-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-width: 400px;
+  width: 100%;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+.level-button {
+  padding: 12px 20px;
+  font-family: 'Comic Neue', cursive;
+  font-size: 1.2rem;
+  font-weight: 700;
+  background: linear-gradient(145deg, #ffd79a, #ffb347);
+  border: 3px solid #ff9800;
+  border-radius: 15px;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+.level-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+.level-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 25px;
+  max-width: 600px;
+  width: 100%;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 15px;
+  background-color: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(to right, #4caf50, #8bc34a);
+  transition: width 0.5s;
+}
+
+.equation {
+  font-size: 4rem;
+  background-color: white;
+  padding: 20px 40px;
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+}
+
+.equation-number {
+  display: inline-block;
+  min-width: 70px;
+  text-align: center;
+}
+
+.answer-input {
+  width: 100px;
+  font-size: 4rem;
+  text-align: center;
+  border: 3px dashed #7b68ee;
+  border-radius: 15px;
+  padding: 5px;
+  font-family: 'Comic Neue', cursive;
+  font-weight: 700;
+  color: #213547;
+  outline: none;
+}
+
+.answer-input:focus {
+  border-color: #4caf50;
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+}
+
+.check-button {
+  padding: 15px 40px;
+  font-size: 1.5rem;
+  font-family: 'Comic Neue', cursive;
+  font-weight: 700;
+  background: linear-gradient(145deg, #50c878, #4caf50);
+  border: none;
+  color: white;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.check-button:hover {
+  transform: scale(1.05);
+}
+
+.check-button:active {
+  transform: scale(0.98);
+}
+
+.feedback {
+  font-size: 2rem;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.next-button {
+  padding: 12px 30px;
+  font-size: 1.2rem;
+  font-family: 'Comic Neue', cursive;
+  font-weight: 700;
+  background: linear-gradient(145deg, #738adb, #5d76e7);
+  border: none;
+  color: white;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.next-button:hover {
+  transform: scale(1.05);
+}
+
+.next-button:active {
+  transform: scale(0.98);
+}
+
+.result-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 25px;
+}
+
+.result-title {
+  font-size: 2.5rem;
+  color: #7b68ee;
+}
+
+.score {
+  font-size: 3.5rem;
+  color: #4caf50;
+}
+
+.play-again-button {
+  padding: 15px 40px;
+  font-size: 1.5rem;
+  font-family: 'Comic Neue', cursive;
+  font-weight: 700;
+  background: linear-gradient(145deg, #ff9800, #ff6f00);
+  border: none;
+  color: white;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.play-again-button:hover {
+  transform: scale(1.05);
+}
+
+.play-again-button:active {
+  transform: scale(0.98);
+}
+
+.hidden {
+  display: none !important;
+}
+
+.emoji {
+  font-size: 40px;
+  position: fixed;
+  animation: fall 2s linear forwards;
+  z-index: 1000;
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(-50px) rotate(0deg);
+    opacity: 1;
   }
-  a:hover {
-    color: #747bff;
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
   }
-  button {
-    background-color: #f9f9f9;
+}
+
+@media (max-width: 600px) {
+  .equation {
+    font-size: 3rem;
+    padding: 15px 25px;
+  }
+  
+  .answer-input {
+    width: 80px;
+    font-size: 3rem;
+  }
+  
+  .check-button, .play-again-button {
+    padding: 12px 30px;
+    font-size: 1.3rem;
   }
 }
