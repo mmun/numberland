@@ -75,18 +75,21 @@ function GameContainer({ currentMax, currentRound, totalRounds, onCorrectAnswer,
   
   const showConfetti = () => {
     confetti({
-      particleCount: 100,
-      spread: 70,
+      particleCount: 150, // More particles for bigger effect
+      spread: 90, // Wider spread
       origin: { y: 0.6 }
     });
   };
   
   const showPoopEmoji = () => {
-    for (let i = 0; i < 5; i++) {
+    // Create more emojis for a bigger effect
+    for (let i = 0; i < 8; i++) {
       const poop = document.createElement('div');
       poop.className = 'emoji poop-emoji';
       poop.textContent = '💩';
       poop.style.left = `${Math.random() * 100}vw`;
+      // Add size variation for more playful effect
+      poop.style.fontSize = `${60 + Math.random() * 40}px`;
       document.body.appendChild(poop);
 
       // Remove after animation completes
@@ -95,6 +98,9 @@ function GameContainer({ currentMax, currentRound, totalRounds, onCorrectAnswer,
       }, 2000);
     }
   };
+  
+  // Detect if we're on a mobile device for responsive adjustments
+  const isMobile = window.innerWidth <= 600;
   
   return (
     <div className="game-container">
@@ -109,6 +115,7 @@ function GameContainer({ currentMax, currentRound, totalRounds, onCorrectAnswer,
           ref={inputRef}
           className="answer-input"
           type="number"
+          inputMode="numeric" // Better for mobile numeric keyboard
           min="0"
           max="99"
           value={userAnswer}

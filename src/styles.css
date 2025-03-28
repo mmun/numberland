@@ -1,7 +1,7 @@
-/* Emoji animations */
+/* Emoji animations - Enhanced for larger size */
 .emoji {
   position: fixed;
-  font-size: 30px;
+  font-size: 60px; /* Doubled size */
   animation: fall 2s forwards;
   z-index: 100;
 }
@@ -24,22 +24,23 @@
   }
 }
 
-/* Progress bar styling */
+/* Progress bar styling - keeping this separate as it might be used elsewhere */
 .progress-container {
   width: 100%;
-  margin-bottom: 20px;
+  margin-bottom: 40px; /* Doubled spacing */
 }
 
 .progress-text {
   text-align: center;
-  margin-bottom: 5px;
+  margin-bottom: 10px; /* Doubled spacing */
+  font-size: 1.5rem; /* Increased font size */
 }
 
 .progress-bar-container {
   width: 100%;
-  height: 10px;
+  height: 20px; /* Doubled height */
   background-color: #e0e0e0;
-  border-radius: 5px;
+  border-radius: 10px; /* Doubled radius */
   overflow: hidden;
 }
 
@@ -48,5 +49,3 @@
   background-color: #4caf50;
   transition: width 0.3s ease;
 }
-
-/* You can keep existing styles or add more as needed */
