@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       fontFamily: {
@@ -51,6 +51,11 @@ export default {
         fall: "fall 2s forwards",
         "level-up": "levelUp 1s ease",
         "level-down": "levelDown 1s ease",
+      },
+      screens: {
+        "ipad-portrait": {
+          raw: "(min-width: 768px) and (max-width: 1024px) and (orientation: portrait)",
+        },
       },
     },
   },
